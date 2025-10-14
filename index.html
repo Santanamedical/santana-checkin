@@ -157,10 +157,11 @@
       <label>Password</label>
       <input type="password" id="authPassword" autocomplete="new-password" autocapitalize="none" spellcheck="false" required />
       <div class="row" style="margin-top:10px">
-        <button class="btn primary" id="btnDoSignIn">Sign in</button>
-        <button class="btn" id="btnDoSignUp" type="button">Sign up</button>
-        <button class="btn ghost right" id="btnCloseAuth">Close</button>
-      </div>
+  <button class="btn primary" id="btnDoSignIn">Sign in</button>
+  <button class="btn" id="btnDoSignUp" type="button">Sign up</button>
+  <button class="btn ghost" id="btnForgot" type="button">Forgot password?</button>
+  <button class="btn ghost right" id="btnCloseAuth">Close</button>
+</div>
       <div class="small muted">First user becomes <b>admin</b>.</div>
     </div>
   </div>
@@ -521,6 +522,15 @@
         if (error) { alert(error.message); return; }
         alert("Signed up. Now click Sign in.");
       };
+      document.getElementById("btnForgot").onclick = async () => {
+  const email = document.getElementById("authEmail").value.trim();
+  if (!email) return alert("Enter your email address first.");
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href // user returns here after reset
+  });
+  if (error) return alert(error.message);
+  alert("Password reset email sent. Check your inbox.");
+};
       document.getElementById("btnSignOut").onclick = async () => {
         await supabase.auth.signOut();
         window.APP_ROLE = null;
