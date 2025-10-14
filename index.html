@@ -575,8 +575,21 @@
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { openAuth(); } else { afterAuth(); }
-      supabase.auth.onAuthStateChange((_event, _session) => { afterAuth(); });
-    });
+      supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    const newPassword = prompt("Enter a new password:");
+    if (!newPassword) return alert("Password not changed.");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      alert(error.message);
+    } else {
+      alert("Password updated. Please sign in with your new password.");
+      closeAuth();
+      openAuth();
+    }
+  }
+  afterAuth();
+});
   </script>
 </body>
 </html>
