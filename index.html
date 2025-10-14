@@ -43,15 +43,8 @@
     .modal{background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.12);padding:16px;min-width:320px;max-width:90vw}
     .modal h3{margin:0 0 10px 0}
     .right{margin-left:auto}
-    .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 14px;border-radius:999px;display:none}
   </style>
-
-  <!-- Use ESM import for Supabase; more reliable on GitHub Pages -->
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-    window.__supabase_createClient = createClient; // expose for non-module code
-    console.log('[boot] Supabase ESM loaded');
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <header>
@@ -71,27 +64,21 @@
     <div class="tabs" id="tabs"></div>
 
     <main id="views">
-      <!-- FRONT DESK PAGE -->
-      <section id="view-frontdesk" class="view" style="display:none">
+      <section id="view-checkin" class="view">
         <div class="grid">
           <div class="card half">
-            <h2>Front Desk — Check-In</h2>
+            <h2>Front Desk — Check‑In</h2>
             <label>Patient Number</label>
             <input type="text" id="ciPatient" placeholder="e.g. PN123456" autocomplete="off" />
             <div class="row" style="margin-top:10px">
-              <button class="btn primary" id="btnAddCheckin">Record Check-In</button>
-              <span class="small">Server timestamp. Duplicate protection 5 min.</span>
+              <button class="btn primary" id="btnAddCheckin">Record Check‑In</button>
+              <span class="small">Server timestamp.</span>
             </div>
             <div class="sep"></div>
-            <div class="small">Last 5 check-ins</div>
+            <div class="small">Last 5 check‑ins</div>
             <table id="tblCheckinRecent"></table>
           </div>
-        </div>
-      </section>
 
-      <!-- DOCTOR PAGE -->
-      <section id="view-doctor" class="view" style="display:none">
-        <div class="grid">
           <div class="card half">
             <h2>Doctor Room — Seen</h2>
             <label>Patient Number</label>
@@ -100,7 +87,7 @@
             <input type="text" id="dvDoctor" placeholder="e.g. Dr Lerato" autocomplete="off" />
             <div class="row" style="margin-top:10px">
               <button class="btn ok" id="btnAddDoctorVisit">Record Seen</button>
-              <span class="small">Server timestamp. Duplicate protection 5 min.</span>
+              <span class="small">Server timestamp.</span>
             </div>
             <div class="sep"></div>
             <div class="small">Last 5 doctor entries</div>
@@ -109,7 +96,6 @@
         </div>
       </section>
 
-      <!-- RECON -->
       <section id="view-recon" class="view" style="display:none">
         <div class="card">
           <h2>Reconciliation — Daily Audit</h2>
@@ -134,13 +120,12 @@
             <table id="tblUnmatched"></table>
           </div>
           <div class="card half">
-            <h2>Unseen Check-Ins <span class="tag warn" id="cntUnseen">0</span></h2>
+            <h2>Unseen Check‑Ins <span class="tag warn" id="cntUnseen">0</span></h2>
             <table id="tblUnseen"></table>
           </div>
         </div>
       </section>
 
-      <!-- ADMIN USERS -->
       <section id="view-admin" class="view" style="display:none">
         <div class="card">
           <h2>Admin — Users & Roles</h2>
@@ -155,7 +140,6 @@
         </div>
       </section>
 
-      <!-- AUDIT LOG -->
       <section id="view-log" class="view" style="display:none">
         <div class="card">
           <h2>Immutable Audit Log</h2>
@@ -165,70 +149,35 @@
     </main>
   </div>
 
-  <!-- AUTH: SIGN-IN and SIGN-UP are separate panes -->
   <div id="authOverlay" class="overlay" aria-modal="true" role="dialog">
     <div class="modal">
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <h3 id="authTitle">Sign in</h3>
-        <button class="btn ghost" id="btnCloseAuth">Close</button>
-      </div>
-      <div id="authSigninPane">
-        <label>Email</label>
-        <input type="email" id="authEmailSI" autocomplete="off" autocapitalize="none" spellcheck="false" required />
-        <label>Password</label>
-        <input type="password" id="authPasswordSI" autocomplete="current-password" autocapitalize="none" spellcheck="false" required />
-        <div class="row" style="margin-top:10px">
-          <button class="btn primary" id="btnDoSignIn">Sign in</button>
-          <span class="small muted">New here? <a href="#" id="linkToSignup">Create an account</a></span>
-        </div>
-      </div>
-      <div id="authSignupPane" style="display:none">
-        <label>Email</label>
-        <input type="email" id="authEmailSU" autocomplete="off" autocapitalize="none" spellcheck="false" required />
-        <label>Password</label>
-        <input type="password" id="authPasswordSU" autocomplete="new-password" autocapitalize="none" spellcheck="false" required />
-        <div class="row" style="margin-top:10px">
-          <button class="btn" id="btnDoSignUp" type="button">Sign up</button>
-          <span class="small muted">Have an account? <a href="#" id="linkToSignin">Back to sign in</a></span>
-        </div>
+      <h3>Sign in / Sign up</h3>
+      <label>Email</label>
+      <input type="email" id="authEmail" autocomplete="off" autocapitalize="none" spellcheck="false" required />
+      <label>Password</label>
+      <input type="password" id="authPassword" autocomplete="new-password" autocapitalize="none" spellcheck="false" required />
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="btnDoSignIn">Sign in</button>
+        <button class="btn" id="btnDoSignUp" type="button">Sign up</button>
+        <button class="btn ghost right" id="btnCloseAuth">Close</button>
       </div>
       <div class="small muted">First user becomes <b>admin</b>.</div>
     </div>
   </div>
-  <div id="toast" class="toast"></div>
 
   <script>
-    // ====== YOUR SUPABASE KEYS (from your project) ======
+    // ====== PASTE YOUR SUPABASE KEYS HERE ======
     const SUPABASE_URL = "https://eqgecbyrewtgvunsehnd.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxZ2VjYnlyZXd0Z3Z1bnNlaG5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjU3NzgsImV4cCI6MjA3NTk0MTc3OH0.KTlM8qjcTo4b7j_9TyDKigEX0f7Tdq9qYBGAym1xWwc";
-    // ================================================
+    // ===========================================
 
+    // Inactivity auto sign-out (10 minutes)
     const AUTO_SIGNOUT_MS = 10 * 60 * 1000;
-    const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-    const EDIT_WINDOW_MS  = 5 * 60 * 1000; // 5 minutes
-
     let inactivityTimer = null;
-    let supabase = null;
-
-    function waitForSupabase() {
-      return new Promise((resolve, reject) => {
-        let tries=0, max=80; (function check(){
-          if (window.__supabase_createClient) return resolve();
-          if (++tries > max) return reject(new Error("Supabase library failed to load (ESM)"));
-          setTimeout(check, 100);
-        })();
-      });
-    }
-    function createClient() {
-      const createClientFn = window.__supabase_createClient;
-      if (!createClientFn) throw new Error('Supabase not available');
-      supabase = createClientFn(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
-
     function resetInactivityTimer() {
       if (inactivityTimer) clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
-        if (!supabase) return;
+        if (!window.supabase) return;
         supabase.auth.signOut().finally(() => {
           window.APP_ROLE = null;
           clearAuthFields();
@@ -241,13 +190,21 @@
       window.addEventListener(ev, resetInactivityTimer, { passive: true });
     });
 
-    // Tabs per role (separate pages for front desk & doctor)
+    function waitForSupabase() {
+      return new Promise((resolve, reject) => {
+        let tries=0, max=50; (function check(){
+          if (window.supabase && window.supabase.createClient) return resolve();
+          if (++tries > max) return reject(new Error("Supabase library failed to load"));
+          setTimeout(check, 100);
+        })();
+      });
+    }
+
     const TABS = [
-      { id: "view-frontdesk", label: "Front Desk", roles: ["frontdesk", "admin"] },
-      { id: "view-doctor",   label: "Doctor",     roles: ["doctor", "admin"] },
-      { id: "view-recon",    label: "Reconciliation", roles: ["admin"] },
-      { id: "view-admin",    label: "Users", roles: ["admin"] },
-      { id: "view-log",      label: "Audit Log", roles: ["admin"] },
+      { id: "view-checkin", label: "Capture", roles: ["frontdesk", "doctor", "admin"] },
+      { id: "view-recon",   label: "Reconciliation", roles: ["admin"] },
+      { id: "view-admin",   label: "Users", roles: ["admin"] },
+      { id: "view-log",     label: "Audit Log", roles: ["admin"] },
     ];
     function renderTabs(activeId, role) {
       const c = document.getElementById("tabs"); c.innerHTML = "";
@@ -268,6 +225,12 @@
       if (id === "view-admin") renderUsersList();
     }
 
+    let supabase = null;
+    function createClient() {
+      const { createClient } = window.supabase;
+      supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
     function dayRange(date) { const d0 = new Date(date); d0.setHours(0,0,0,0); const d1 = new Date(d0); d1.setDate(d1.getDate()+1); return [d0.toISOString(), d1.toISOString()]; }
 
     function renderTable(el, cols, data) {
@@ -280,6 +243,7 @@
         const tr = document.createElement("tr");
         cols.forEach(c => {
           const td = document.createElement("td");
+          td.dataset.key = c.key;
           const v = row[c.key];
           if (c.render) {
             td.appendChild(c.render(row));
@@ -287,7 +251,7 @@
             const span = document.createElement("span");
             span.className = "tag " + (v === "MATCH" ? "ok" : (String(v).includes("UNSEEN") ? "warn" : "bad"));
             span.textContent = v; td.appendChild(span);
-          } else if (["ci","dv","ts","created_at","last_login"].includes(c.key)) {
+          } else if (["ci","dv","ts","created_at"].includes(c.key)) {
             td.textContent = v ? new Date(v).toLocaleString() : "";
             td.className = "muted";
           } else {
@@ -300,17 +264,9 @@
       el.appendChild(thead); el.appendChild(tb);
     }
 
-    function canEdit(ts){ return (Date.now() - new Date(ts).getTime()) <= EDIT_WINDOW_MS; }
-    function toast(msg, ms=4000){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>{t.style.display='none'}, ms); }
-
     async function dbInsert(table, row) {
       const { data, error } = await supabase.from(table).insert(row).select().single();
       if (error) { alert("DB error: " + error.message); return null; }
-      return data;
-    }
-    async function dbUpdate(table, id, patch){
-      const { data, error } = await supabase.from(table).update(patch).eq('id', id).select().single();
-      if (error){ alert('DB error: ' + error.message); return null; }
       return data;
     }
     async function dbRecent(table, limit=5) {
@@ -326,47 +282,13 @@
     }
     async function dbLog(action, meta) { await dbInsert("audit_log", { action, meta }); }
 
-    async function recentDuplicate(table, filters){
-      const since = new Date(Date.now() - DEDUP_WINDOW_MS).toISOString();
-      let q = supabase.from(table).select('id, ts').gte('ts', since).order('ts', {ascending:false}).limit(1);
-      Object.entries(filters).forEach(([k,v])=>{ q = q.eq(k, v); });
-      const { data, error } = await q;
-      if (error) { console.warn(error); return false; }
-      return (data && data.length > 0);
-    }
-
     async function renderRecent() {
       const ci = await dbRecent("check_ins", 5);
       const dv = await dbRecent("doctor_visits", 5);
       renderTable(document.getElementById("tblCheckinRecent"),
-        [
-          {key:"patient",label:"Patient #"},
-          {key:"ts",label:"Check-In Time"},
-          {key:"actions",label:"Actions", render: (row)=>{
-            const wrap=document.createElement('div');
-            const e=document.createElement('button'); e.className='btn'; e.textContent='Edit'; e.disabled=!canEdit(row.ts);
-            e.onclick=async()=>{
-              const pn=prompt('Edit patient number', row.patient); if(!pn) return;
-              const upd = await dbUpdate('check_ins', row.id, { patient: pn }); if (upd){ await dbLog('checkin:edit', { id: row.id, patient: pn }); renderRecent(); }
-            };
-            wrap.appendChild(e);
-            return wrap;
-          }}
-        ], ci);
+        [{key:"patient",label:"Patient #"}, {key:"ts",label:"Check‑In Time"}], ci);
       renderTable(document.getElementById("tblDoctorRecent"),
-        [
-          {key:"patient",label:"Patient #"}, {key:"doctor",label:"Doctor"}, {key:"ts",label:"Seen Time"},
-          {key:"actions",label:"Actions", render: (row)=>{
-            const wrap=document.createElement('div');
-            const e=document.createElement('button'); e.className='btn'; e.textContent='Edit'; e.disabled=!canEdit(row.ts);
-            e.onclick=async()=>{
-              const pn=prompt('Edit patient number', row.patient)||row.patient; const dr=prompt('Edit doctor', row.doctor)||row.doctor;
-              const upd = await dbUpdate('doctor_visits', row.id, { patient: pn, doctor: dr }); if (upd){ await dbLog('doctor:edit', { id: row.id, patient: pn, doctor: dr }); renderRecent(); }
-            };
-            wrap.appendChild(e);
-            return wrap;
-          }}
-        ], dv);
+        [{key:"patient",label:"Patient #"}, {key:"doctor",label:"Doctor"}, {key:"ts",label:"Seen Time"}], dv);
     }
 
     function reconcileRows(cis, dvs, windowHours) {
@@ -411,11 +333,11 @@
       const dvs = await dbByDay("doctor_visits", date);
       const { rows, unmatched, unseen } = reconcileRows(cis, dvs, win);
       renderTable(document.getElementById("tblRecon"),
-        [{key:"patient",label:"Patient #"}, {key:"ci",label:"Check-In Time"}, {key:"dv",label:"Seen Time"}, {key:"doctor",label:"Doctor"}, {key:"diffMin",label:"Δ minutes"}, {key:"status",label:"Status"}], rows);
+        [{key:"patient",label:"Patient #"}, {key:"ci",label:"Check‑In Time"}, {key:"dv",label:"Seen Time"}, {key:"doctor",label:"Doctor"}, {key:"diffMin",label:"Δ minutes"}, {key:"status",label:"Status"}], rows);
       document.getElementById("cntUnmatched").textContent = unmatched.length;
       document.getElementById("cntUnseen").textContent = unseen.length;
       renderTable(document.getElementById("tblUnmatched"), [{key:"patient",label:"Patient #"}, {key:"dv",label:"Seen Time"}, {key:"doctor",label:"Doctor"}], unmatched);
-      renderTable(document.getElementById("tblUnseen"), [{key:"patient",label:"Patient #"}, {key:"ci",label:"Check-In Time"}], unseen);
+      renderTable(document.getElementById("tblUnseen"), [{key:"patient",label:"Patient #"}, {key:"ci",label:"Check‑In Time"}], unseen);
     }
 
     // --- Audit Log renderer ---
@@ -430,7 +352,10 @@
 
       const rows = (data || []).map(r => ({
         action: r.action,
-        meta: (() => { try { return JSON.stringify(r.meta ?? {}, null, 0); } catch { return String(r.meta ?? ""); } })(),
+        meta: (() => {
+          try { return JSON.stringify(r.meta ?? {}, null, 0); }
+          catch { return String(r.meta ?? ""); }
+        })(),
         ts: r.ts
       }));
 
@@ -441,22 +366,17 @@
       ], rows);
     }
 
-    // Create with duplicate guard
     async function addCheckIn(pn) {
       if (window.APP_ROLE !== "frontdesk" && window.APP_ROLE !== "admin") return alert("Front desk or admin only");
-      if (await recentDuplicate('check_ins', { patient: pn })) return alert('Duplicate check-in blocked (5 min window).');
       const rec = await dbInsert("check_ins", { patient: pn });
       if (rec) { await dbLog("checkin:add", { patient: pn, ts: rec.ts }); renderRecent(); }
     }
     async function addDoctorVisit(pn, doctor) {
       if (window.APP_ROLE !== "doctor" && window.APP_ROLE !== "admin") return alert("Doctor or admin only");
       if (!doctor) { alert("Enter your doctor name or ID before submitting"); return; }
-      if (await recentDuplicate('doctor_visits', { patient: pn, doctor })) return alert('Duplicate doctor entry blocked (5 min window).');
       const rec = await dbInsert("doctor_visits", { patient: pn, doctor });
       if (rec) { await dbLog("doctor:add", { patient: pn, doctor: rec.doctor, ts: rec.ts }); renderRecent(); }
     }
-
-    // Export / Import, Wipe with soft-undo
     async function exportJSON() {
       if (window.APP_ROLE !== "admin") return alert("Admin only");
       const since = new Date(); since.setDate(since.getDate() - 90);
@@ -482,36 +402,17 @@
       };
       reader.readAsText(file);
     }
-
-    let lastWipeBackup = null; let undoTimer = null;
     async function wipeAll() {
       if (window.APP_ROLE !== "admin") return alert("Admin only");
       if (!confirm("This will delete ALL records. Continue?")) return;
-      // Soft backup in memory for quick undo
-      const { data: ci } = await supabase.from("check_ins").select("*");
-      const { data: dv } = await supabase.from("doctor_visits").select("*");
-      const { data: lg } = await supabase.from("audit_log").select("*");
-      lastWipeBackup = { ci: ci||[], dv: dv||[], lg: lg||[] };
-
       await supabase.from("check_ins").delete().neq("id","00000000-0000-0000-0000-000000000000");
       await supabase.from("doctor_visits").delete().neq("id","00000000-0000-0000-0000-000000000000");
       await supabase.from("audit_log").delete().neq("id","00000000-0000-0000-0000-000000000000");
-      await dbLog("admin:wipe",{});
-      renderRecent();
-      toast('All data deleted. Undo available for 30s.');
-      if (undoTimer) clearTimeout(undoTimer);
-      undoTimer = setTimeout(()=>{ lastWipeBackup = null; }, 30000);
-    }
-    async function undoWipe(){
-      if (!lastWipeBackup) return alert('Nothing to undo');
-      for (const r of lastWipeBackup.ci) { delete r.id; await dbInsert('check_ins', r); }
-      for (const r of lastWipeBackup.dv) { delete r.id; await dbInsert('doctor_visits', r); }
-      for (const r of lastWipeBackup.lg) { delete r.id; await dbInsert('audit_log', r); }
-      lastWipeBackup = null; toast('Undo complete'); renderRecent();
+      await dbLog("admin:wipe",{}); renderRecent();
     }
 
     async function fetchAllUsers() {
-      const { data, error } = await supabase.from("users").select("id,email,role,created_at,last_login").order("email");
+      const { data, error } = await supabase.from("users").select("id,email,role,created_at").order("email");
       if (error) { alert("DB error: " + error.message); return []; }
       return data || [];
     }
@@ -521,20 +422,12 @@
       await dbLog("role:update", { id, role });
       return true;
     }
-    async function deactivateUser(id){
-      const ok = confirm('Deactivate this user? They will be blocked on next sign-in.'); if (!ok) return false;
-      const { error } = await supabase.from('users').update({ role: 'disabled' }).eq('id', id);
-      if (error){ alert('DB error: ' + error.message); return false; }
-      await dbLog('user:deactivate', { id });
-      toast('User deactivated');
-      return true;
-    }
     function userRowControls(row) {
       const wrap = document.createElement("div");
       wrap.className = "row";
 
       const sel = document.createElement("select");
-      ["frontdesk","doctor","admin","disabled"].forEach(r => {
+      ["frontdesk","doctor","admin"].forEach(r => {
         const opt = document.createElement("option");
         opt.value = r; opt.textContent = r; if (row.role === r) opt.selected = true;
         sel.appendChild(opt);
@@ -547,10 +440,7 @@
         if (ok) { btn.textContent = "Saved"; setTimeout(()=>btn.textContent="Save", 1200); }
       };
 
-      const del = document.createElement('button'); del.className='btn bad'; del.textContent='Deactivate';
-      del.onclick = async ()=>{ const ok = await deactivateUser(row.id); if (ok) renderUsersList(); };
-
-      wrap.appendChild(sel); wrap.appendChild(btn); wrap.appendChild(del);
+      wrap.appendChild(sel); wrap.appendChild(btn);
       return wrap;
     }
     async function renderUsersList() {
@@ -561,24 +451,20 @@
       document.getElementById("userCount").textContent = `${filtered.length} user${filtered.length===1?"":"s"}`;
       renderTable(document.getElementById("tblUsers"), [
         { key:"email", label:"Email" },
-        { key:"last_login", label:"Last login" },
         { key:"role", label:"Role", render: userRowControls },
         { key:"created_at", label:"Created" },
       ], filtered);
     }
 
-    // Auth overlay helpers
     const overlay = document.getElementById("authOverlay");
     function clearAuthFields() {
-      ["authEmailSI","authPasswordSI","authEmailSU","authPasswordSU"].forEach(id=>{ const el=document.getElementById(id); if (el) el.value=''; });
+      const e = document.getElementById("authEmail");
+      const p = document.getElementById("authPassword");
+      if (e) e.value = "";
+      if (p) p.value = "";
     }
-    function openAuth(mode='signin'){ clearAuthFields(); overlay.style.display='flex'; setAuthMode(mode); }
+    function openAuth(){ clearAuthFields(); overlay.style.display = "flex"; }
     function closeAuth(){ overlay.style.display = "none"; clearAuthFields(); }
-    function setAuthMode(mode){
-      document.getElementById('authSigninPane').style.display = (mode==='signin')? 'block':'none';
-      document.getElementById('authSignupPane').style.display = (mode==='signup')? 'block':'none';
-      document.getElementById('authTitle').textContent = (mode==='signin')? 'Sign in' : 'Sign up';
-    }
 
     async function fetchRole() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -594,136 +480,91 @@
         document.getElementById("userBadge").textContent = "Not signed in";
         document.getElementById("btnSignOut").style.display = "none";
         document.getElementById("tabs").innerHTML = "";
-        openAuth('signin');
+        openAuth();
         return;
       }
-      // Ensure row exists + set last_login
       const { data: existing } = await supabase.from("users").select("*").eq("id", user.id).maybeSingle();
       if (!existing) {
         const { count } = await supabase.from("users").select("id", { count: "exact", head: true });
         const role = (count === 0) ? "admin" : "frontdesk";
-        await supabase.from("users").insert({ id: user.id, email: user.email, role, last_login: new Date().toISOString() });
-      } else {
-        await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', user.id);
+        await supabase.from("users").insert({ id: user.id, email: user.email, role });
       }
-
       const info = await fetchRole();
-      if ((info.role||'') === 'disabled') {
-        await supabase.auth.signOut();
-        alert('Your account has been deactivated. Contact an admin.');
-        openAuth('signin');
-        return;
-      }
-
       window.APP_ROLE = info.role || "frontdesk";
       document.getElementById("userBadge").textContent = `${user.email} — ${window.APP_ROLE}`;
       document.getElementById("btnSignOut").style.display = "inline-block";
-      const firstView = window.APP_ROLE==='doctor' ? 'view-doctor' : 'view-frontdesk';
-      showView(firstView, window.APP_ROLE);
+      showView("view-checkin", window.APP_ROLE);
       await renderRecent();
       const d = document.getElementById("reconDate"); if (d) d.value = new Date().toISOString().slice(0,10);
       closeAuth();
-      resetInactivityTimer();
+      resetInactivityTimer(); // start inactivity timer when authenticated
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
-      // Bind UI handlers immediately so the auth popup works even if Supabase fails to load
-      const bindUI = () => {
-        const $ = (id)=>document.getElementById(id);
-        $("btnOpenAuth").onclick = ()=>openAuth('signin');
-        $("btnCloseAuth").onclick = closeAuth;
-        $("linkToSignup").onclick = (e)=>{ e.preventDefault(); setAuthMode('signup'); };
-        $("linkToSignin").onclick = (e)=>{ e.preventDefault(); setAuthMode('signin'); };
+      try { await waitForSupabase(); createClient(); }
+      catch(e){ alert("Could not load Supabase library. Check your internet connection and reopen this file in Chrome."); console.error(e); return; }
 
-        $("btnDoSignIn").onclick = async (e) => {
-          e.preventDefault();
-          if (!window.__supabase_createClient && !supabase) { alert('Supabase failed to load. Please check your internet and refresh.'); return; }
-          if (!supabase) createClient();
-          const email = $("authEmailSI").value.trim();
-          const password = $("authPasswordSI").value;
-          const { error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) {
-            if (confirm('Sign in failed. Not registered yet? Create an account.')) setAuthMode('signup');
-            return;
-          }
-          afterAuth();
-        };
-        $("btnDoSignUp").onclick = async () => {
-          if (!window.__supabase_createClient && !supabase) { alert('Supabase failed to load. Please check your internet and refresh.'); return; }
-          if (!supabase) createClient();
-          const email = $("authEmailSU").value.trim();
-          const password = $("authPasswordSU").value;
-          const { error } = await supabase.auth.signUp({ email, password });
-          if (error) { alert(error.message); return; }
-          alert("Signed up. Now click Sign in.");
-          setAuthMode('signin');
-        };
-        $("btnSignOut").onclick = async () => {
-          try { if (supabase) await supabase.auth.signOut(); } catch(_){}
-          window.APP_ROLE = null;
-          clearAuthFields();
-          openAuth('signin');
-        };
-
-        $("btnAddCheckin").onclick = () => {
-          const pn = $("ciPatient").value.trim();
-          if (!pn) return alert("Enter patient number");
-          addCheckIn(pn); $("ciPatient").value = "";
-        };
-        $("btnAddDoctorVisit").onclick = () => {
-          const pn = $("dvPatient").value.trim();
-          const dr = $("dvDoctor").value.trim();
-          if (!pn) return alert("Enter patient number");
-          if (!dr) return alert("Enter your doctor name or ID before submitting");
-          addDoctorVisit(pn, dr); $("dvPatient").value = ""; $("dvDoctor").value = "";
-        };
-
-        $("btnRefreshRecon").onclick = renderRecon;
-        $("reconDate").addEventListener("change", renderRecon);
-        $("windowHrs").addEventListener("change", renderRecon);
-        $("btnExportCSV").onclick = async () => {
-          const date = $("reconDate").value ? new Date($("reconDate").value + "T00:00:00") : new Date();
-          const cis = await dbByDay("check_ins", date);
-          const dvs = await dbByDay("doctor_visits", date);
-          const { rows } = reconcileRows(cis, dvs, parseInt($("windowHrs").value || "24", 10));
-          const headers = ["patient_number","checkin_timestamp","seen_timestamp","doctor","diff_minutes","status"];
-          const csv = [headers.join(",")].concat(
-            rows.map(r => [r.patient,r.ci,r.dv,r.doctor||"",r.diffMin||"",r.status]
-              .map(v => `"${String(v??"").replace(/"/g,'""')}"`).join(","))
-          ).join("\n");
-          const blob = new Blob([csv], { type: "text/csv" });
-          const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "reconciliation.csv"; a.click();
-        };
-
-        $("btnExport").onclick = exportJSON;
-        $("btnImport").onclick = () => $("fileImport").click();
-        $("fileImport").addEventListener("change", (e) => { if (e.target.files && e.target.files[0]) importJSONFile(e.target.files[0]); });
-        $("btnWipe").onclick = async ()=>{
-          await wipeAll();
-          const undoBtn = document.createElement('button'); undoBtn.className='btn warn'; undoBtn.textContent='Undo';
-          undoBtn.onclick = ()=>{ undoWipe(); undoBtn.remove(); };
-          document.body.appendChild(undoBtn); setTimeout(()=>{ try{undoBtn.remove();}catch{} }, 30000);
-        };
-
-        $("btnRefreshUsers").onclick = renderUsersList;
-        $("userSearch").addEventListener("input", renderUsersList);
+      document.getElementById("btnOpenAuth").onclick = openAuth;
+      document.getElementById("btnCloseAuth").onclick = closeAuth;
+      document.getElementById("btnDoSignIn").onclick = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("authEmail").value.trim();
+        const password = document.getElementById("authPassword").value;
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) { alert(error.message); return; }
+        afterAuth();
+      };
+      document.getElementById("btnDoSignUp").onclick = async () => {
+        const email = document.getElementById("authEmail").value.trim();
+        const password = document.getElementById("authPassword").value;
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) { alert(error.message); return; }
+        alert("Signed up. Now click Sign in.");
+      };
+      document.getElementById("btnSignOut").onclick = async () => {
+        await supabase.auth.signOut();
+        window.APP_ROLE = null;
+        clearAuthFields();
+        openAuth();
       };
 
-      bindUI(); // attach handlers immediately
+      document.getElementById("btnAddCheckin").onclick = () => {
+        const pn = document.getElementById("ciPatient").value.trim();
+        if (!pn) return alert("Enter patient number");
+        addCheckIn(pn); document.getElementById("ciPatient").value = "";
+      };
+      document.getElementById("btnAddDoctorVisit").onclick = () => {
+        const pn = document.getElementById("dvPatient").value.trim();
+        const dr = document.getElementById("dvDoctor").value.trim();
+        if (!pn) return alert("Enter patient number");
+        if (!dr) return alert("Enter your doctor name or ID before submitting");
+        addDoctorVisit(pn, dr); document.getElementById("dvPatient").value = ""; document.getElementById("dvDoctor").value = "";
+      };
 
-      // Show the auth modal fast so it's visible even if Supabase takes time
-      setTimeout(()=>{ try{ openAuth('signin'); }catch(_){ } }, 400);
+      document.getElementById("btnRefreshRecon").onclick = renderRecon;
+      document.getElementById("reconDate").addEventListener("change", renderRecon);
+      document.getElementById("windowHrs").addEventListener("change", renderRecon);
+      document.getElementById("btnExportCSV").onclick = async () => {
+        const date = document.getElementById("reconDate").value ? new Date(document.getElementById("reconDate").value + "T00:00:00") : new Date();
+        const cis = await dbByDay("check_ins", date);
+        const dvs = await dbByDay("doctor_visits", date);
+        const { rows } = reconcileRows(cis, dvs, parseInt(document.getElementById("windowHrs").value || "24", 10));
+        const headers = ["patient_number","checkin_timestamp","seen_timestamp","doctor","diff_minutes","status"];
+        const csv = [headers.join(",")].concat(rows.map(r => [r.patient,r.ci,r.dv,r.doctor||"",r.diffMin||"",r.status].map(v => `"${String(v??"").replace(/"/g,'""')}"`).join(","))).join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "reconciliation.csv"; a.click();
+      };
 
-      // Load Supabase ESM and proceed
-      try { await waitForSupabase(); createClient(); }
-      catch(e){
-        console.error('[boot] Supabase load error', e);
-        toast('Supabase library could not load. Check your internet and refresh.');
-        return; // keep the UI usable; auth will show but cannot complete without SDK
-      }
+      document.getElementById("btnExport").onclick = exportJSON;
+      document.getElementById("btnImport").onclick = () => document.getElementById("fileImport").click();
+      document.getElementById("fileImport").addEventListener("change", (e) => { if (e.target.files && e.target.files[0]) importJSONFile(e.target.files[0]); });
+      document.getElementById("btnWipe").onclick = wipeAll;
+
+      document.getElementById("btnRefreshUsers").onclick = renderUsersList;
+      document.getElementById("userSearch").addEventListener("input", renderUsersList);
 
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { openAuth('signin'); } else { afterAuth(); }
+      if (!session) { openAuth(); } else { afterAuth(); }
       supabase.auth.onAuthStateChange((_event, _session) => { afterAuth(); });
     });
   </script>
