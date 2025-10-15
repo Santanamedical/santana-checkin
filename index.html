@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Santana Medical Clinic </title>
+  <style>
+    :root{--bg:#f7f8fa;--card:#ffffff;--card2:#f2f5fa;--text:#1a1a1a;--muted:#6d7785;--ok:#28a745;--warn:#ffbf00;--bad:#dc3545;--line:#e0e4ec;--primary:#2f6fed}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#ffffff,#f2f4f8)}
+    header h1{margin:0;font-size:16px;letter-spacing:.2px}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .tab{padding:10px 14px;border:1px solid var(--line);background:var(--card);border-radius:10px;cursor:pointer}
+    .tab.active{outline:2px solid var(--primary)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .card{grid-column:span 12;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,0.03)}
+    @media(min-width:900px){.half{grid-column:span 6}}
+    h2{margin:4px 0 10px 0;font-size:15px;color:#2b3a57}
+    label{display:block;margin:10px 0 6px 0;color:#2b3a57}
+    input[type="text"], input[type="password"], input[type="email"], select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--text)}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .btn{appearance:none;border:1px solid var(--line);background:#eef2ff;color:#1d2a5b;padding:10px 14px;border-radius:10px;cursor:pointer}
+    .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+    .btn.ghost{background:transparent}
+    .btn.bad{background:var(--bad);border-color:#d86868;color:#fff}
+    .btn.warn{background:#ffd76a;border-color:#ffca3a}
+    .btn.ok{background:#3bc37d;border-color:#34af70;color:#fff}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#eef2ff;border:1px solid var(--line);font-size:12px;color:#1d2a5b}
+    .tag.ok{background:#e9f8ef;border-color:#cdeed9;color:#166b3b}
+    .tag.warn{background:#fff5db;border-color:#ffe8a1;color:#7a5a00}
+    .tag.bad{background:#ffe9ea;border-color:#ffd0d3;color:#8b1c27}
+    table{width:100%;border-collapse:collapse;border-spacing:0}
+    th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+    th{font-weight:600;color:#2b3a57}
+    tr:hover td{background:#f7f9ff}
+    .muted{color:var(--muted)}
+    .sep{height:1px;background:var(--line);margin:12px 0}
+    .small{font-size:12px;color:#2b3a57}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:9999}
+    .modal{background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.12);padding:16px;min-width:320px;max-width:90vw}
+    .modal h3{margin:0 0 10px 0}
+    .right{margin-left:auto}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header>
+    <h1>Santana Medical Clinic - Check In</h1>
+    <div class="row">
+      <span id="userBadge" class="tag">Not signed in</span>
+      <button class="btn" id="btnOpenAuth">Sign in</button>
+      <button class="btn" id="btnOpenSignup">Sign up</button>
+      <button class="btn ghost" id="btnSignOut" style="display:none">Sign out</button>
+      <button class="btn right" id="btnExport" title="Admin only" style="display:none">Export JSON</button>
+      <button class="btn" id="btnImport" title="Admin only" style="display:none">Import JSON</button>
+      <input type="file" id="fileImport" accept="application/json" style="display:none" />
+      <button class="btn bad" id="btnWipe" title="Admin only" style="display:none">Wipe Data</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div id="undoBar" class="row" style="display:none;gap:10px;margin-bottom:8px">
+      <span class="small">Entry deleted.</span>
+      <button class="btn" id="btnUndoDelete">Undo</button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+
+    <main id="views">
+      <section id="view-checkin" class="view">
+        <div class="grid">
+          <div class="card half" id="card-checkin">
+            <h2>Front Desk — Check‑In</h2>
+            <label>Patient Number</label>
+            <input type="text" id="ciPatient" placeholder="e.g. PN123456" autocomplete="off" />
+            <label>Consult Type</label>
+            <select id="ciConsultType" required>
+              <option value="">Select consult type...</option>
+              <option value="Medical Aid">Medical Aid</option>
+              <option value="Cash">Cash</option>
+              <option value="Follow Up">Follow Up</option>
+              <option value="Dressing or Injection">Dressing or Injection</option>
+              <option value="No Charge">No Charge</option>
+            </select>
+            <div class="row" style="margin-top:10px">
+              <button class="btn primary" id="btnAddCheckin">Record Check‑In</button>
+              <span class="small">Server timestamp.</span>
+            </div>
+            <div class="sep"></div>
+            <div class="small">Last 5 check‑ins</div>
+            <table id="tblCheckinRecent"></table>
+          </div>
+
+          <div class="card half" id="card-doctor">
+            <h2>Doctor Room — Seen</h2>
+            <label>Patient Number</label>
+            <input type="text" id="dvPatient" placeholder="e.g. PN123456" autocomplete="off" />
+            <label>Consult Type</label>
+            <select id="dvConsultType" required>
+              <option value="">Select consult type...</option>
+              <option value="Medical Aid">Medical Aid</option>
+              <option value="Cash">Cash</option>
+              <option value="Follow Up">Follow Up</option>
+              <option value="Dressing or Injection">Dressing or Injection</option>
+              <option value="No Charge">No Charge</option>
+            </select>
+            <label>Doctor (your name/ID)</label>
+            <input type="text" id="dvDoctor" placeholder="e.g. Dr Lerato" autocomplete="off" />
+            <div class="row" style="margin-top:10px">
+              <button class="btn ok" id="btnAddDoctorVisit">Record Seen</button>
+              <span class="small">Server timestamp.</span>
+            </div>
+            <div class="sep"></div>
+            <div class="small">Today's doctor entries</div>
+            <table id="tblDoctorRecent"></table>
+          </div>
+
+          <div class="card half" id="card-doctor-export">
+            <h2>Export My Entries</h2>
+            <div class="small" style="margin-bottom:10px">Export your patient visit records for any date range.</div>
+            <label>From Date</label>
+            <input type="date" id="doctorExportFrom" />
+            <label>To Date</label>
+            <input type="date" id="doctorExportTo" />
+            <div class="row" style="margin-top:10px">
+              <button class="btn primary" id="btnDoctorExport">Export CSV</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-recon" class="view" style="display:none">
+        <div class="card">
+          <h2>Reconciliation — Daily Audit</h2>
+          <div class="row" style="gap:12px;margin-bottom:10px">
+            <label>From Date <input type="date" id="reconDateFrom" /></label>
+            <label>To Date <input type="date" id="reconDateTo" /></label>
+            <button class="btn" id="btnRefreshRecon">Refresh</button>
+            <button class="btn" id="btnExportCSV">Export CSV</button>
+          </div>
+          <table id="tblRecon"></table>
+        </div>
+
+        <div class="grid" style="margin-top:12px">
+          <div class="card half">
+            <h2>Unseen Check‑Ins <span class="tag warn" id="cntUnseen">0</span></h2>
+            <table id="tblUnseen"></table>
+          </div>
+          <div class="card half">
+            <h2>Unmatched Doctor Entries <span class="tag bad" id="cntUnmatched">0</span></h2>
+            <table id="tblUnmatched"></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-admin" class="view" style="display:none">
+        <div class="card">
+          <h2>Admin — Users & Roles</h2>
+          <div class="tools row" style="margin:8px 0 12px 0">
+            <input type="text" id="userSearch" placeholder="Search email…" />
+            <span class="tag" id="userCount">0 users</span>
+            <button class="btn" id="btnRefreshUsers">Refresh</button>
+          </div>
+          <table id="tblUsers"></table>
+          <div class="sep"></div>
+          <div class="small">Users appear here after they’ve signed in once. Change roles using the dropdowns. Only admins can see this page.</div>
+        </div>
+      </section>
+
+      <section id="view-log" class="view" style="display:none">
+        <div class="card">
+          <h2>Immutable Audit Log</h2>
+          <table id="tblLog"></table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="authOverlay" class="overlay" aria-modal="true" role="dialog">
+    <div class="modal">
+      <h3 id="authTitle">Sign in</h3>
+      <label id="lblAuthName" style="display:none">Name</label>
+      <input type="text" id="authName" autocomplete="off" autocapitalize="words" spellcheck="false" style="display:none" />
+      <label id="lblAuthRole" style="display:none">Role</label>
+      <select id="authRole" style="display:none">
+        <option value="frontdesk">Front Desk</option>
+        <option value="doctor">Doctor</option>
+      </select>
+      <label>Email</label>
+      <input type="email" id="authEmail" autocomplete="off" autocapitalize="none" spellcheck="false" required />
+      <label>Password</label>
+      <input type="password" id="authPassword" autocomplete="new-password" autocapitalize="none" spellcheck="false" required />
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="btnDoSignIn">Sign in</button>
+        <button class="btn primary" id="btnDoSignUp" type="button" style="display:none">Sign up</button>
+        <button class="btn primary" id="btnDoReset" type="button" style="display:none">Set new password</button>
+        <button class="btn ghost right" id="btnCloseAuth">Close</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn ghost" id="btnForgot" type="button">Forgot password?</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== PASTE YOUR SUPABASE KEYS HERE ======
+    const SUPABASE_URL = "https://eqgecbyrewtgvunsehnd.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxZ2VjYnlyZXd0Z3Z1bnNlaG5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjU3NzgsImV4cCI6MjA3NTk0MTc3OH0.KTlM8qjcTo4b7j_9TyDKigEX0f7Tdq9qYBGAym1xWwc";
+    // ===========================================
+
+    // Inactivity auto sign-out (10 minutes)
+    const AUTO_SIGNOUT_MS = 10 * 60 * 1000;
+    let inactivityTimer = null;
+    function resetInactivityTimer() {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        if (!window.supabase) return;
+        supabase.auth.signOut().finally(() => {
+          window.APP_ROLE = null;
+          clearAuthFields();
+          alert("Signed out due to inactivity.");
+          openAuth();
+        });
+      }, AUTO_SIGNOUT_MS);
+    }
+    ["click","mousemove","keydown","touchstart","scroll"].forEach(ev => {
+      window.addEventListener(ev, resetInactivityTimer, { passive: true });
+    });
+
+    function waitForSupabase() {
+      return new Promise((resolve, reject) => {
+        let tries=0, max=50; (function check(){
+          if (window.supabase && window.supabase.createClient) return resolve();
+          if (++tries > max) return reject(new Error("Supabase library failed to load"));
+          setTimeout(check, 100);
+        })();
+      });
+    }
+
+    const TABS = [
+      { id: "view-checkin", label: "Capture", roles: ["frontdesk", "doctor", "admin"] },
+      { id: "view-recon",   label: "Reconciliation", roles: ["admin"] },
+      { id: "view-admin",   label: "Users", roles: ["admin"] },
+      { id: "view-log",     label: "Audit Log", roles: ["admin"] },
+    ];
+    function renderTabs(activeId, role) {
+      const c = document.getElementById("tabs"); c.innerHTML = "";
+      if (!role) return; // no tabs until role resolved
+      TABS.filter(t => t.roles.includes(role)).forEach(t => {
+        const b = document.createElement("button");
+        b.className = "tab" + (t.id === activeId ? " active" : "");
+        b.textContent = t.label;
+        b.onclick = () => showView(t.id, role);
+        c.appendChild(b);
+      });
+    }
+    function showView(id, role) {
+      document.querySelectorAll(".view").forEach(v => v.style.display = "none");
+      document.getElementById(id).style.display = "block";
+      renderTabs(id, role);
+      if (id === "view-checkin") {
+        const ci = document.getElementById("card-checkin");
+        const dr = document.getElementById("card-doctor");
+        const exp = document.getElementById("card-doctor-export");
+        if (ci) ci.style.display = "none";
+        if (dr) dr.style.display = "none";
+        if (exp) exp.style.display = "none";
+        if (role === "frontdesk") { if (ci) ci.style.display = "block"; }
+        else if (role === "doctor") { 
+          if (dr) dr.style.display = "block"; 
+          if (exp) exp.style.display = "block";
+          tryPopulateDoctorName(); 
+        }
+        else if (role === "admin") { if (ci) ci.style.display = "block"; if (dr) dr.style.display = "block"; }
+      }
+      if (id === "view-recon") renderRecon();
+      if (id === "view-log") renderLog();
+      if (id === "view-admin") renderUsersList();
+    }
+
+    let supabase = null;
+    function createClient() {
+      const { createClient } = window.supabase;
+      supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    function dateRange(fromDate, toDate) { 
+      const d0 = new Date(fromDate); d0.setHours(0,0,0,0); 
+      const d1 = new Date(toDate); d1.setHours(23,59,59,999); 
+      return [d0.toISOString(), d1.toISOString()]; 
+    }
+
+    function renderTable(el, cols, data) {
+      el.innerHTML = "";
+      const thead = document.createElement("thead"); const trh = document.createElement("tr");
+      cols.forEach(c => { const th = document.createElement("th"); th.textContent = c.label; trh.appendChild(th); });
+      thead.appendChild(trh);
+      const tb = document.createElement("tbody");
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+        cols.forEach(c => {
+          const td = document.createElement("td");
+          td.dataset.key = c.key;
+          const v = row[c.key];
+          if (c.render) {
+            td.appendChild(c.render(row));
+          } else if (c.key === "status") {
+            const span = document.createElement("span");
+            span.className = "tag " + (v === "MATCH" ? "ok" : (String(v).includes("UNSEEN") ? "warn" : "bad"));
+            span.textContent = v; td.appendChild(span);
+          } else if (["ci","dv","ts","created_at"].includes(c.key)) {
+            td.textContent = v ? new Date(v).toLocaleString() : "";
+            td.className = "muted";
+          } else {
+            td.textContent = (v ?? "");
+          }
+          tr.appendChild(td);
+        });
+        tb.appendChild(tr);
+      });
+      el.appendChild(thead); el.appendChild(tb);
+    }
+
+    async function dbInsert(table, row) {
+      const { data, error } = await supabase.from(table).insert(row).select().single();
+      if (error) { alert("DB error: " + error.message); return null; }
+      return data;
+    }
+    async function dbRecentByPatient(table, patient, sinceIso) {
+      let q = supabase.from(table).select("*").eq("patient", patient).order("ts", { ascending: false }).limit(5);
+      if (sinceIso) q = q.gte("ts", sinceIso);
+      const { data, error } = await q;
+      if (error) { console.warn(error); return []; }
+      return data || [];
+    }
+    async function dbRecent(table, limit=5) {
+      const { data, error } = await supabase.from(table).select("*").is("deleted_at", null).order("ts", { ascending: false }).limit(limit);
+      if (error) { alert("DB error: " + error.message); return []; }
+      return data || [];
+    }
+    async function dbByDateRange(table, fromDate, toDate) {
+      const [start, end] = dateRange(fromDate, toDate);
+      const { data, error } = await supabase.from(table).select("*").is("deleted_at", null).gte("ts", start).lte("ts", end).order("ts");
+      if (error) { alert("DB error: " + error.message); return []; }
+      return data || [];
+    }
+    async function dbLog(action, meta) { await dbInsert("audit_log", { action, meta }); }
+
+    async function renderRecent() {
+      const ci = await dbRecent("check_ins", 5);
+      // Get today's doctor visits instead of just last 5
+      const today = new Date().toISOString().slice(0,10);
+      let dv = await dbByDateRange("doctor_visits", today, today);
+      
+      // For doctors, only show their own entries
+      if (window.APP_ROLE === "doctor") {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userProfile } = await supabase.from("users").select("display_name").eq("id", user.id).maybeSingle();
+          const doctorName = userProfile?.display_name;
+          if (doctorName) {
+            dv = dv.filter(entry => (entry.doctor || "").trim() === doctorName.trim());
+          }
+        }
+      }
+      // Sort by most recent first
+      dv = dv.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+      
+      renderTable(document.getElementById("tblCheckinRecent"),
+        [
+          {key:"patient",label:"Patient #", render: (row) => recentRowEditor("check_ins", row, "patient")},
+          {key:"consult_type",label:"Consult Type"},
+          {key:"ts",label:"Check‑In Time"},
+          {key:"actions",label:"Actions", render: (row) => recentRowActions("check_ins", row)}
+        ], ci);
+      renderTable(document.getElementById("tblDoctorRecent"),
+        [
+          {key:"patient",label:"Patient #", render: (row) => recentRowEditor("doctor_visits", row, "patient")},
+          {key:"consult_type",label:"Consult Type"},
+          {key:"doctor",label:"Doctor"},
+          {key:"ts",label:"Seen Time"},
+          {key:"actions",label:"Actions", render: (row) => recentRowActions("doctor_visits", row)}
+        ], dv);
+    }
+
+    function isEditableRow(row){ return (!row.finalised_at) && ((Date.now() - new Date(row.ts).getTime()) <= 5*60*1000); }
+    function recentRowEditor(table, row, field){
+      const wrap = document.createElement("div");
+      const input = document.createElement("input"); input.type = "text"; input.value = row[field]||""; input.style.width = "100%";
+      input.id = `edit-${table}-${row.id}-${field}`;
+      const canEdit = isEditableRow(row);
+      input.disabled = !canEdit;
+      input.readOnly = !canEdit;
+      wrap.appendChild(input);
+      return wrap;
+    }
+    let lastDeletedCtx = null; let undoTimer = null;
+    function showUndo(onUndo){
+      const bar = document.getElementById("undoBar"); if (!bar) return;
+      bar.style.display = "flex";
+      const undoBtn = document.getElementById("btnUndoDelete");
+      const clear = () => { bar.style.display = "none"; if (undoTimer) { clearTimeout(undoTimer); undoTimer=null; } };
+      undoBtn.onclick = async () => { clear(); await onUndo(); };
+      undoTimer = setTimeout(clear, 10000);
+    }
+    async function softDelete(table, row){
+      if (window.APP_ROLE !== "admin") { alert("Admin only"); return; }
+      const { error } = await supabase.from(table).update({ deleted_at: new Date().toISOString() }).eq("id", row.id);
+      if (error) { alert("DB error: "+error.message); return; }
+      await dbLog(table+":soft_delete", { id: row.id });
+      renderRecent(); if (document.getElementById("reconDate")) renderRecon();
+      showUndo(async () => {
+        const { error: e2 } = await supabase.from(table).update({ deleted_at: null }).eq("id", row.id);
+        if (e2) { alert("Undo failed: "+e2.message); return; }
+        await dbLog(table+":undo_delete", { id: row.id });
+        renderRecent(); if (document.getElementById("reconDate")) renderRecon();
+      });
+    }
+    function recentRowActions(table, row){
+      const wrap = document.createElement("div"); wrap.className = "row";
+      const canEdit = isEditableRow(row);
+      const isAdmin = window.APP_ROLE === "admin";
+      const canRoleEdit = (table === "check_ins" && (isAdmin || window.APP_ROLE === "frontdesk")) || (table === "doctor_visits" && (isAdmin || window.APP_ROLE === "doctor"));
+
+      // Finalise button for patient field edit
+      const finalise = document.createElement("button"); finalise.className = "btn"; finalise.textContent = "Finalise";
+      finalise.disabled = !(canEdit && canRoleEdit);
+      finalise.onclick = async () => {
+        const inputEl = document.getElementById(`edit-${table}-${row.id}-patient`);
+        if (!inputEl) { alert("Editor not found"); return; }
+        const value = String(inputEl.value||"").trim(); if (!value) { alert("Patient number required"); return; }
+        const { data, error } = await supabase.from(table).update({ patient: value, finalised_at: new Date().toISOString() }).eq("id", row.id).select().single();
+        if (error) { alert("DB error: "+error.message); return; }
+        await dbLog(table+":finalise", { id: row.id, field: "patient", value, ts: data?.ts });
+        finalise.textContent = "Finalised"; finalise.disabled = true; if (inputEl) { inputEl.readOnly = true; inputEl.disabled = true; }
+        await renderRecent(); if (document.getElementById("reconDate")) await renderRecon();
+      };
+      wrap.appendChild(finalise);
+
+      // Delete button for admin (soft delete)
+      if (isAdmin) {
+        const del = document.createElement("button"); del.className = "btn bad"; del.textContent = "Delete";
+        del.onclick = () => softDelete(table, row);
+        wrap.appendChild(del);
+      }
+      return wrap;
+    }
+
+    function reconcileRows(cis, dvs, windowHours) {
+      const byPnCI = new Map(); cis.forEach(r => byPnCI.set(r.patient, (byPnCI.get(r.patient)||[]).concat([r])));
+      const byPnDV = new Map(); dvs.forEach(r => byPnDV.set(r.patient, (byPnDV.get(r.patient)||[]).concat([r])));
+      const patients = new Set([...byPnCI.keys(), ...byPnDV.keys()]);
+      const rows = [], unmatched = [], unseen = [];
+      const winMs = windowHours * 3600 * 1000;
+      for (const pn of patients) {
+        const ciList = (byPnCI.get(pn)||[]).sort((a,b)=>a.ts.localeCompare(b.ts));
+        const dvList = (byPnDV.get(pn)||[]).sort((a,b)=>a.ts.localeCompare(b.ts));
+        const usedDV = new Set();
+        for (const ci of ciList) {
+          let matchedDV = null;
+          for (const dv of dvList) {
+            if (usedDV.has(dv.id)) continue;
+            const dt = new Date(dv.ts) - new Date(ci.ts);
+            if (dt >= 0 && dt <= winMs) { matchedDV = dv; break; }
+          }
+          if (matchedDV) {
+            usedDV.add(matchedDV.id);
+            rows.push({ 
+              patient: pn, 
+              ci: ci.ts, 
+              ciConsultType: ci.consult_type || "",
+              dv: matchedDV.ts, 
+              dvConsultType: matchedDV.consult_type || "",
+              doctor: matchedDV.doctor||"", 
+              diffMin: Math.round((new Date(matchedDV.ts)-new Date(ci.ts))/60000), 
+              status: "MATCH" 
+            });
+          } else {
+            rows.push({ 
+              patient: pn, 
+              ci: ci.ts, 
+              ciConsultType: ci.consult_type || "",
+              dv: "", 
+              dvConsultType: "",
+              doctor: "", 
+              diffMin: "", 
+              status: "UNSEEN CHECK-IN" 
+            });
+            unseen.push({ patient: pn, ci: ci.ts });
+          }
+        }
+        for (const dv of dvList) {
+          if (!usedDV.has(dv.id)) {
+            rows.push({ 
+              patient: pn, 
+              ci: "", 
+              ciConsultType: "",
+              dv: dv.ts, 
+              dvConsultType: dv.consult_type || "",
+              doctor: dv.doctor||"", 
+              diffMin: "", 
+              status: "UNMATCHED DOCTOR ENTRY" 
+            });
+            unmatched.push({ patient: pn, dv: dv.ts, doctor: dv.doctor||"" });
+          }
+        }
+      }
+      rows.sort((a,b)=> (a.status===b.status ? a.patient.localeCompare(b.patient) : (a.status > b.status ? 1 : -1)));
+      return { rows, unmatched, unseen };
+    }
+    async function renderRecon() {
+      const fromDate = document.getElementById("reconDateFrom").value || new Date().toISOString().slice(0,10);
+      const toDate = document.getElementById("reconDateTo").value || fromDate;
+      const cis = await dbByDateRange("check_ins", fromDate, toDate);
+      let dvs = await dbByDateRange("doctor_visits", fromDate, toDate);
+      
+      // For doctors, only show their own entries in reconciliation
+      if (window.APP_ROLE === "doctor") {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userProfile } = await supabase.from("users").select("display_name").eq("id", user.id).maybeSingle();
+          const doctorName = userProfile?.display_name;
+          if (doctorName) {
+            dvs = dvs.filter(entry => (entry.doctor || "").trim() === doctorName.trim());
+          }
+        }
+      }
+      
+      const { rows, unmatched, unseen } = reconcileRows(cis, dvs, 24); // Fixed 24-hour window
+      renderTable(document.getElementById("tblRecon"),
+        [{key:"patient",label:"Patient #"}, {key:"ci",label:"Check‑In Time"}, {key:"dv",label:"Seen Time"}, {key:"doctor",label:"Doctor"}, {key:"diffMin",label:"Δ minutes"}, {key:"status",label:"Status"}], rows);
+      document.getElementById("cntUnmatched").textContent = unmatched.length;
+      document.getElementById("cntUnseen").textContent = unseen.length;
+      renderTable(document.getElementById("tblUnmatched"), [{key:"patient",label:"Patient #"}, {key:"dv",label:"Seen Time"}, {key:"doctor",label:"Doctor"}], unmatched);
+      renderTable(document.getElementById("tblUnseen"), [{key:"patient",label:"Patient #"}, {key:"ci",label:"Check‑In Time"}], unseen);
+    }
+
+    // --- Audit Log renderer ---
+    async function renderLog() {
+      if (window.APP_ROLE !== "admin") return;
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("id, ts, action, meta")
+        .order("ts", { ascending: false })
+        .limit(200);
+      if (error) { alert("DB error: " + error.message); return; }
+
+      const rows = (data || []).map(r => ({
+        action: r.action,
+        meta: (() => {
+          try { return JSON.stringify(r.meta ?? {}, null, 0); }
+          catch { return String(r.meta ?? ""); }
+        })(),
+        ts: r.ts
+      }));
+
+      renderTable(document.getElementById("tblLog"), [
+        { key: "action", label: "Action" },
+        { key: "meta", label: "Details" },
+        { key: "ts", label: "Time" },
+      ], rows);
+    }
+
+    async function addCheckIn(pn, consultType) {
+      if (window.APP_ROLE !== "frontdesk" && window.APP_ROLE !== "admin") return alert("Front desk or admin only");
+      // prevent duplicate within 5 minutes
+      const since = new Date(Date.now() - 5*60*1000).toISOString();
+      const recent = await dbRecentByPatient("check_ins", pn, since);
+      if (recent.length) { alert("Duplicate check-in within 5 minutes blocked."); return; }
+      const rec = await dbInsert("check_ins", { patient: pn, consult_type: consultType });
+      if (rec) { await dbLog("checkin:add", { patient: pn, consult_type: consultType, ts: rec.ts }); renderRecent(); }
+    }
+    async function addDoctorVisit(pn, doctor, consultType) {
+      if (window.APP_ROLE !== "doctor" && window.APP_ROLE !== "admin") return alert("Doctor or admin only");
+      if (!doctor) { alert("Enter your doctor name or ID before submitting"); return; }
+      // prevent duplicate within 5 minutes for same patient+doctor
+      const since = new Date(Date.now() - 5*60*1000).toISOString();
+      const recent = await dbRecentByPatient("doctor_visits", pn, since);
+      if (recent.some(r => (r.doctor||"").trim() === doctor.trim())) { alert("Duplicate doctor entry within 5 minutes blocked."); return; }
+      const rec = await dbInsert("doctor_visits", { patient: pn, doctor, consult_type: consultType });
+      if (rec) { 
+        await dbLog("doctor:add", { patient: pn, doctor: rec.doctor, consult_type: consultType, ts: rec.ts }); 
+        renderRecent();
+      }
+    }
+    async function exportJSON() {
+      if (window.APP_ROLE !== "admin") return alert("Admin only");
+      const since = new Date(); since.setDate(since.getDate() - 90);
+      const { data: ci } = await supabase.from("check_ins").select("*").gte("ts", since.toISOString()).order("ts");
+      const { data: dv } = await supabase.from("doctor_visits").select("*").gte("ts", since.toISOString()).order("ts");
+      const { data: lg } = await supabase.from("audit_log").select("*").gte("ts", since.toISOString()).order("ts");
+      const payload = { exported_at: new Date().toISOString(), check_ins: ci || [], doctor_visits: dv || [], audit_log: lg || [] };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "santana_checkin_export.json"; a.click();
+    }
+    function importJSONFile(file) {
+      if (window.APP_ROLE !== "admin") return alert("Admin only");
+      const reader = new FileReader();
+      reader.onload = async e => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!Array.isArray(data.check_ins) || !Array.isArray(data.doctor_visits)) throw new Error("Invalid file");
+          for (const row of data.check_ins) { await dbInsert("check_ins", row); }
+          for (const row of data.doctor_visits) { await dbInsert("doctor_visits", row); }
+          if (Array.isArray(data.audit_log)) { for (const row of data.audit_log) { await dbInsert("audit_log", row); } }
+          alert("Import complete"); renderRecent();
+        } catch (err) { alert("Import failed: " + err.message); }
+      };
+      reader.readAsText(file);
+    }
+    async function wipeAll() {
+      if (window.APP_ROLE !== "admin") return alert("Admin only");
+      if (!confirm("This will delete ALL records. Continue?")) return;
+      await supabase.from("check_ins").delete().neq("id","00000000-0000-0000-0000-000000000000");
+      await supabase.from("doctor_visits").delete().neq("id","00000000-0000-0000-0000-000000000000");
+      await supabase.from("audit_log").delete().neq("id","00000000-0000-0000-0000-000000000000");
+      await dbLog("admin:wipe",{}); renderRecent();
+    }
+    async function exportDoctorEntries() {
+      if (window.APP_ROLE !== "doctor") return alert("Doctor only");
+      const fromDate = document.getElementById("doctorExportFrom").value;
+      const toDate = document.getElementById("doctorExportTo").value;
+      if (!fromDate || !toDate) { alert("Please select both from and to dates"); return; }
+      
+      // Get doctor's display name
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { alert("Not signed in"); return; }
+      const { data: userProfile } = await supabase.from("users").select("display_name").eq("id", user.id).maybeSingle();
+      const doctorName = userProfile?.display_name;
+      if (!doctorName) { alert("Doctor name not found in profile"); return; }
+      
+      // Fetch entries for date range
+      let entries = await dbByDateRange("doctor_visits", fromDate, toDate);
+      // Filter to only this doctor's entries
+      entries = entries.filter(entry => (entry.doctor || "").trim() === doctorName.trim());
+      
+      if (entries.length === 0) { alert("No entries found for the selected period"); return; }
+      
+      // Create CSV
+      const headers = ["Patient Number", "Consult Type", "Timestamp"];
+      const csv = [headers.join(",")].concat(entries.map(entry => {
+        return [
+          entry.patient || "",
+          entry.consult_type || "",
+          entry.ts ? new Date(entry.ts).toLocaleString() : ""
+        ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",");
+      })).join("\n");
+      
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a"); 
+      a.href = URL.createObjectURL(blob); 
+      a.download = `${doctorName.replace(/\s+/g,'_')}_entries_${fromDate}_to_${toDate}.csv`; 
+      a.click();
+    }
+
+    async function fetchAllUsers() {
+      const { data, error } = await supabase.from("users").select("id,email,role,created_at,last_login").order("email");
+      if (error) { alert("DB error: " + error.message); return []; }
+      return data || [];
+    }
+    async function updateUserRoleById(id, role) {
+      const { error } = await supabase.from("users").update({ role }).eq("id", id);
+      if (error) { alert("DB error: " + error.message); return false; }
+      await dbLog("role:update", { id, role });
+      return true;
+    }
+    function userRowControls(row) {
+      const wrap = document.createElement("div");
+      wrap.className = "row";
+
+      const sel = document.createElement("select");
+      ["frontdesk","doctor","admin"].forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r; opt.textContent = r; if (row.role === r) opt.selected = true;
+        sel.appendChild(opt);
+      });
+
+      const btn = document.createElement("button");
+      btn.className = "btn"; btn.textContent = "Save";
+      btn.onclick = async () => {
+        const ok = await updateUserRoleById(row.id, sel.value);
+        if (ok) { 
+          btn.textContent = "Saved"; 
+          setTimeout(()=>btn.textContent="Save", 1200);
+          // Refresh current user's role if they changed their own role
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user && user.id === row.id) {
+            await refreshUserRole();
+          }
+        }
+      };
+
+      wrap.appendChild(sel); wrap.appendChild(btn);
+      return wrap;
+    }
+    async function renderUsersList() {
+      if (window.APP_ROLE !== "admin") return;
+      const rows = await fetchAllUsers();
+      const q = (document.getElementById("userSearch").value || "").toLowerCase().trim();
+      const filtered = q ? rows.filter(r => (r.email||"").toLowerCase().includes(q)) : rows;
+      document.getElementById("userCount").textContent = `${filtered.length} user${filtered.length===1?"":"s"}`;
+      renderTable(document.getElementById("tblUsers"), [
+        { key:"email", label:"Email" },
+        { key:"role", label:"Role", render: userRowControls },
+        { key:"last_login", label:"Last login" },
+        { key:"created_at", label:"Created" },
+      ], filtered);
+    }
+
+    const overlay = document.getElementById("authOverlay");
+    function clearAuthFields() {
+      const e = document.getElementById("authEmail");
+      const p = document.getElementById("authPassword");
+      const n = document.getElementById("authName");
+      const r = document.getElementById("authRole");
+      if (e) e.value = "";
+      if (p) p.value = "";
+      if (n) n.value = "";
+      if (r) r.value = "frontdesk";
+    }
+    function setAuthMode(mode){
+      const title = document.getElementById("authTitle");
+      const nameLbl = document.getElementById("lblAuthName");
+      const nameInp = document.getElementById("authName");
+      const roleLbl = document.getElementById("lblAuthRole");
+      const roleSel = document.getElementById("authRole");
+      const btnIn = document.getElementById("btnDoSignIn");
+      const btnUp = document.getElementById("btnDoSignUp");
+      const btnReset = document.getElementById("btnDoReset");
+      const forgot = document.getElementById("btnForgot");
+      if (mode === "signup") {
+        if (title) title.textContent = "Sign up";
+        if (nameLbl) nameLbl.style.display = "block";
+        if (nameInp) nameInp.style.display = "block";
+        if (roleLbl) roleLbl.style.display = "block";
+        if (roleSel) roleSel.style.display = "block";
+        if (btnIn) btnIn.style.display = "none";
+        if (btnUp) btnUp.style.display = "inline-block";
+        if (btnReset) btnReset.style.display = "none";
+        if (forgot) forgot.style.display = "inline-block";
+      } else {
+        if (title) title.textContent = "Sign in";
+        if (nameLbl) nameLbl.style.display = "none";
+        if (nameInp) nameInp.style.display = "none";
+        if (roleLbl) roleLbl.style.display = "none";
+        if (roleSel) roleSel.style.display = "none";
+        if (btnIn) btnIn.style.display = "inline-block";
+        if (btnUp) btnUp.style.display = "none";
+        if (btnReset) btnReset.style.display = "none";
+        if (forgot) forgot.style.display = "inline-block";
+      }
+    }
+    function openAuth(mode){
+      clearAuthFields(); setAuthMode(mode||"signin");
+      overlay.style.display = "flex";
+      const views = document.getElementById("views"); if (views) views.style.display = "none";
+    }
+    async function closeAuth(){
+      overlay.style.display = "none"; clearAuthFields();
+      // Only show views if user is actually signed in
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        const views = document.getElementById("views"); if (views) views.style.display = "none";
+        return;
+      }
+      const views = document.getElementById("views"); if (views) views.style.display = "block";
+    }
+
+    async function fetchRole() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { user: null, role: null };
+      const { data, error } = await supabase.from("users").select("role,email,display_name").eq("id", user.id).maybeSingle();
+      if (error) { console.warn(error); return { user, role: null }; }
+      return { user, role: data?.role || null, profile: data };
+    }
+
+    function tryPopulateDoctorName(){
+      if (window.APP_ROLE !== "doctor") return;
+      const dvDoc = document.getElementById("dvDoctor");
+      if (!dvDoc) return;
+      // Use cached profile if available via last fetchRole
+      // Fallback: refetch minimal profile
+      (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data, error } = await supabase.from("users").select("display_name").eq("id", user.id).maybeSingle();
+        console.log("Doctor name fetch:", { user: user.email, data, error });
+        if (!error && data?.display_name) {
+          dvDoc.value = data.display_name;
+          dvDoc.disabled = true; // Lock the field so it can't be changed
+          dvDoc.style.cursor = "not-allowed";
+          console.log("Set doctor name to:", data.display_name);
+        } else {
+          console.log("No display_name found for doctor");
+        }
+      })();
+    }
+
+    async function refreshUserRole() {
+      const info = await fetchRole();
+      window.APP_ROLE = info.role || null;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        document.getElementById("userBadge").textContent = `${user.email} — ${window.APP_ROLE ?? "no role"}`;
+        // Update admin buttons visibility
+        const btnExport = document.getElementById("btnExport");
+        const btnImport = document.getElementById("btnImport");
+        const btnWipe = document.getElementById("btnWipe");
+        if (window.APP_ROLE === "admin") {
+          if (btnExport) btnExport.style.display = "inline-block";
+          if (btnImport) btnImport.style.display = "inline-block";
+          if (btnWipe) btnWipe.style.display = "inline-block";
+        } else {
+          if (btnExport) btnExport.style.display = "none";
+          if (btnImport) btnImport.style.display = "none";
+          if (btnWipe) btnWipe.style.display = "none";
+        }
+        // Re-render tabs with updated role
+        const currentView = document.querySelector(".view[style*='block']")?.id || "view-checkin";
+        if (window.APP_ROLE) showView(currentView, window.APP_ROLE);
+      }
+      return info;
+    }
+
+    async function afterAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        document.getElementById("userBadge").textContent = "Not signed in";
+        document.getElementById("btnSignOut").style.display = "none";
+        document.getElementById("tabs").innerHTML = "";
+        openAuth();
+        return;
+      }
+      const { data: existing } = await supabase.from("users").select("*").eq("id", user.id).maybeSingle();
+      if (!existing) {
+        const { count } = await supabase.from("users").select("id", { count: "exact", head: true });
+        const role = (count === 0) ? "admin" : (user.user_metadata?.selected_role || "frontdesk");
+        const display_name = (user.user_metadata && user.user_metadata.display_name) ? user.user_metadata.display_name : null;
+        console.log("Creating user with display_name:", display_name, "role:", role);
+        await supabase.from("users").insert({ id: user.id, email: user.email, role, display_name });
+      } else if (!existing.display_name && user.user_metadata?.display_name) {
+        // Update existing user if they have display_name in metadata but not in our table
+        console.log("Updating existing user with display_name:", user.user_metadata.display_name);
+        await supabase.from("users").update({ display_name: user.user_metadata.display_name }).eq("id", user.id);
+      }
+      const info = await fetchRole();
+      window.APP_ROLE = info.role || null;
+      document.getElementById("userBadge").textContent = `${user.email} — ${window.APP_ROLE ?? "no role"}`;
+      document.getElementById("btnSignOut").style.display = "inline-block";
+      const btnOpenAuthEl = document.getElementById("btnOpenAuth");
+      const btnOpenSignupEl = document.getElementById("btnOpenSignup");
+      if (btnOpenAuthEl) btnOpenAuthEl.style.display = "none";
+      if (btnOpenSignupEl) btnOpenSignupEl.style.display = "none";
+      
+      // Show admin buttons only for admins
+      const btnExport = document.getElementById("btnExport");
+      const btnImport = document.getElementById("btnImport");
+      const btnWipe = document.getElementById("btnWipe");
+      if (window.APP_ROLE === "admin") {
+        if (btnExport) btnExport.style.display = "inline-block";
+        if (btnImport) btnImport.style.display = "inline-block";
+        if (btnWipe) btnWipe.style.display = "inline-block";
+      } else {
+        if (btnExport) btnExport.style.display = "none";
+        if (btnImport) btnImport.style.display = "none";
+        if (btnWipe) btnWipe.style.display = "none";
+      }
+      if (window.APP_ROLE) {
+        showView("view-checkin", window.APP_ROLE);
+      } else {
+        // If no role yet, re-fetch shortly (in case of eventual consistency)
+        setTimeout(async () => { const i2 = await fetchRole(); window.APP_ROLE = i2.role || null; if (window.APP_ROLE) showView("view-checkin", window.APP_ROLE); }, 500);
+      }
+      // If doctor, auto-fill doctor name/ID from profile display_name and set export dates
+      if (window.APP_ROLE === "doctor") { 
+        tryPopulateDoctorName();
+        const today = new Date().toISOString().slice(0,10);
+        const dExpFrom = document.getElementById("doctorExportFrom"); if (dExpFrom) dExpFrom.value = today;
+        const dExpTo = document.getElementById("doctorExportTo"); if (dExpTo) dExpTo.value = today;
+      }
+      // Update last_login timestamp
+      await supabase.from("users").update({ last_login: new Date().toISOString() }).eq("id", user.id);
+      await renderRecent();
+      const dFrom = document.getElementById("reconDateFrom"); if (dFrom) dFrom.value = new Date().toISOString().slice(0,10);
+      const dTo = document.getElementById("reconDateTo"); if (dTo) dTo.value = new Date().toISOString().slice(0,10);
+      closeAuth();
+      resetInactivityTimer(); // start inactivity timer when authenticated
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      try { await waitForSupabase(); createClient(); }
+      catch(e){ alert("Could not load Supabase library. Check your internet connection and reopen this file in Chrome."); console.error(e); return; }
+
+      document.getElementById("btnOpenAuth").onclick = () => openAuth("signin");
+      const btnOpenSignup = document.getElementById("btnOpenSignup");
+      if (btnOpenSignup) btnOpenSignup.onclick = () => openAuth("signup");
+      document.getElementById("btnCloseAuth").onclick = closeAuth;
+      const doSignIn = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("authEmail").value.trim();
+        const password = document.getElementById("authPassword").value;
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) { alert(error.message); return; }
+        afterAuth();
+      };
+      document.getElementById("btnDoSignIn").onclick = doSignIn;
+      document.getElementById("authPassword").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doSignIn(e);
+      });
+      document.getElementById("btnForgot").onclick = async () => {
+        const email = document.getElementById("authEmail").value.trim();
+        if (!email) { alert("Enter your email first"); return; }
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${location.origin}${location.pathname}#reset`
+        });
+        if (error) { alert(error.message); return; }
+        alert("Password reset email sent. Check your inbox.");
+      };
+      document.getElementById("btnDoSignUp").onclick = async () => {
+        const email = document.getElementById("authEmail").value.trim();
+        const password = document.getElementById("authPassword").value;
+        const displayName = document.getElementById("authName").value.trim();
+        const selectedRole = document.getElementById("authRole").value;
+        
+        if (!displayName) { alert("Please enter your name"); return; }
+        if (!selectedRole || selectedRole === "") { alert("Please select a role"); return; }
+        if (!email) { alert("Please enter your email"); return; }
+        if (!password) { alert("Please enter a password"); return; }
+        
+        const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName, selected_role: selectedRole } } }); 
+        if (error) { alert(error.message); return; }
+        alert("Signed up. You can now sign in.");
+        setAuthMode("signin");
+      };
+      document.getElementById("btnDoReset").onclick = async () => {
+        const password = document.getElementById("authPassword").value;
+        if (!password) { alert("Enter a new password"); return; }
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) { alert(error.message); return; }
+        alert("Password updated. You can now sign in.");
+        setAuthMode("signin");
+      };
+      document.getElementById("btnSignOut").onclick = async () => {
+        await supabase.auth.signOut();
+        window.APP_ROLE = null;
+        clearAuthFields();
+        const btnOpenAuthEl = document.getElementById("btnOpenAuth");
+        const btnOpenSignupEl = document.getElementById("btnOpenSignup");
+        if (btnOpenAuthEl) btnOpenAuthEl.style.display = "inline-block";
+        if (btnOpenSignupEl) btnOpenSignupEl.style.display = "inline-block";
+        document.getElementById("btnSignOut").style.display = "none";
+        document.getElementById("userBadge").textContent = "Not signed in";
+        document.getElementById("tabs").innerHTML = "";
+        // Hide admin buttons on sign out
+        const btnExport = document.getElementById("btnExport");
+        const btnImport = document.getElementById("btnImport");
+        const btnWipe = document.getElementById("btnWipe");
+        if (btnExport) btnExport.style.display = "none";
+        if (btnImport) btnImport.style.display = "none";
+        if (btnWipe) btnWipe.style.display = "none";
+        // Hide all views in the background to show a blank page
+        document.querySelectorAll(".view").forEach(v => v.style.display = "none");
+        const views = document.getElementById("views"); if (views) views.style.display = "none";
+        openAuth("signin");
+      };
+
+      document.getElementById("btnAddCheckin").onclick = () => {
+        const pn = document.getElementById("ciPatient").value.trim();
+        const consultType = document.getElementById("ciConsultType").value;
+        if (!pn) return alert("Enter patient number");
+        if (!consultType) return alert("Please select a consult type");
+        addCheckIn(pn, consultType); 
+        document.getElementById("ciPatient").value = "";
+        document.getElementById("ciConsultType").value = "";
+      };
+      document.getElementById("btnAddDoctorVisit").onclick = () => {
+        const pn = document.getElementById("dvPatient").value.trim();
+        const dr = document.getElementById("dvDoctor").value.trim();
+        const consultType = document.getElementById("dvConsultType").value;
+        if (!pn) return alert("Enter patient number");
+        if (!dr) return alert("Enter your doctor name or ID before submitting");
+        if (!consultType) return alert("Please select a consult type");
+        addDoctorVisit(pn, dr, consultType); 
+        document.getElementById("dvPatient").value = ""; 
+        // Only clear doctor name for admin (doctors have it locked to their profile)
+        if (window.APP_ROLE !== "doctor") {
+          document.getElementById("dvDoctor").value = "";
+        }
+        document.getElementById("dvConsultType").value = "";
+      };
+
+      document.getElementById("btnRefreshRecon").onclick = renderRecon;
+      document.getElementById("reconDateFrom").addEventListener("change", renderRecon);
+      document.getElementById("reconDateTo").addEventListener("change", renderRecon);
+      document.getElementById("btnExportCSV").onclick = async () => {
+        const fromDate = document.getElementById("reconDateFrom").value || new Date().toISOString().slice(0,10);
+        const toDate = document.getElementById("reconDateTo").value || fromDate;
+        const cis = await dbByDateRange("check_ins", fromDate, toDate);
+        const dvs = await dbByDateRange("doctor_visits", fromDate, toDate);
+        const { rows } = reconcileRows(cis, dvs, 24);
+        const headers = ["patient_number","checkin_timestamp","checkin_consult_type","seen_timestamp","seen_consult_type","doctor","diff_minutes","status","consult_type_match"];
+        const csv = [headers.join(",")].concat(rows.map(r => {
+          const consultMatch = (r.ciConsultType && r.dvConsultType) ? 
+            (r.ciConsultType === r.dvConsultType ? "MATCH" : "MISMATCH") : 
+            (r.status === "MATCH" ? "NO_DATA" : "");
+          return [
+            r.patient,
+            r.ci,
+            r.ciConsultType || "",
+            r.dv,
+            r.dvConsultType || "",
+            r.doctor || "",
+            r.diffMin || "",
+            r.status,
+            consultMatch
+          ];
+        }).map(row => row.map(v => `"${String(v??"").replace(/"/g,'""')}"`).join(","))).join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `reconciliation_${fromDate}_to_${toDate}.csv`; a.click();
+      };
+
+      document.getElementById("btnExport").onclick = exportJSON;
+      document.getElementById("btnImport").onclick = () => document.getElementById("fileImport").click();
+      document.getElementById("fileImport").addEventListener("change", (e) => { if (e.target.files && e.target.files[0]) importJSONFile(e.target.files[0]); });
+      document.getElementById("btnWipe").onclick = wipeAll;
+
+      document.getElementById("btnRefreshUsers").onclick = renderUsersList;
+      document.getElementById("userSearch").addEventListener("input", renderUsersList);
+      
+      document.getElementById("btnDoctorExport").onclick = exportDoctorEntries;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const hash = (location.hash||"").toLowerCase();
+      if (hash.includes("reset")) {
+        openAuth("signin");
+        // Supabase will set a recovery session via the link; switch UI to reset mode
+        setAuthMode("reset");
+        const title = document.getElementById("authTitle");
+        const btnIn = document.getElementById("btnDoSignIn");
+        const btnUp = document.getElementById("btnDoSignUp");
+        const btnReset = document.getElementById("btnDoReset");
+        const forgot = document.getElementById("btnForgot");
+        if (title) title.textContent = "Set new password";
+        if (btnIn) btnIn.style.display = "none";
+        if (btnUp) btnUp.style.display = "none";
+        if (btnReset) btnReset.style.display = "inline-block";
+        if (forgot) forgot.style.display = "none";
+      } else if (!session) {
+        openAuth("signin");
+      } else {
+        afterAuth();
+      }
+      supabase.auth.onAuthStateChange((_event, _session) => { afterAuth(); });
+    });
+  </script>
+</body>
+</html>
